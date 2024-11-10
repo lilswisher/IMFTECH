@@ -31,33 +31,32 @@
 
     h1 {
       text-transform: lowercase;
-      margin-bottom: 20px;
+      font-weight: bold;
+      transition: font-size 0.3s;
     }
 
-    /* Back arrow styling */
-    #backArrow {
+    .main-title {
+      font-size: 3em;
+    }
+
+    .workspace-title {
       font-size: 1.5em;
-      background: none;
-      border: none;
-      color: white;
+    }
+
+    #backArrow {
+      width: 30px;
+      height: 30px;
       cursor: pointer;
       position: absolute;
       top: 20px;
       left: 20px;
-      display: none; /* Hidden initially */
-      transition: color 0.3s;
+      display: none;
     }
 
-    #backArrow:hover {
-      color: #e0e0e0;
-    }
-
-    /* Hide the actual file input */
     #upload {
       display: none;
     }
 
-    /* Custom label styled as a button */
     .upload-label {
       padding: 15px 30px;
       font-size: 1.5em;
@@ -75,11 +74,6 @@
       transform: scale(1.05);
     }
 
-    .upload-label:active {
-      background-color: #c0c0c0;
-    }
-
-    /* Social Media Icons styling */
     .social-media {
       display: flex;
       gap: 15px;
@@ -124,17 +118,23 @@
       transition: filter 0.3s;
     }
 
-    #overlayText {
+    #overlayText, #overlayImage {
       position: absolute;
       top: 50%;
       left: 50%;
-      transform: translate(-50%, -50%);
+      transform: translate(-50%, -50%) scale(0.6); /* Start with a smaller scale */
       font-size: 3em;
       font-style: normal;
+      font-weight: normal;
       color: white;
       display: none;
       pointer-events: none;
       transition: transform 0.3s;
+    }
+
+    #overlayImage {
+      max-width: 50%;
+      max-height: 50%;
     }
 
     .button-group {
@@ -161,7 +161,7 @@
       color: black;
     }
 
-    .stencil-options {
+    .stencil-options, .sticker-options {
       display: flex;
       flex-direction: column;
       gap: 5px;
@@ -178,7 +178,7 @@
       transition: max-height 0.3s ease, opacity 0.3s ease;
     }
 
-    .stencil-options.show {
+    .stencil-options.show, .sticker-options.show {
       max-height: 500px;
       opacity: 1;
     }
@@ -208,7 +208,7 @@
       width: 160px;
     }
 
-    .slider-container, #downloadBtn, #stencilGroup {
+    .slider-container, #downloadBtn, #stencilGroup, #stickerGroup {
       display: none;
     }
 
@@ -219,16 +219,14 @@
 </head>
 <body>
   <!-- Back Arrow in Top Left -->
-  <button id="backArrow">←</button>
+  <img id="backArrow" src="backarrow-icon.png" alt="Back" onclick="resetEditor()">
 
   <div class="container">
-    <h1>imformant.tech</h1>
+    <h1 id="mainTitle" class="main-title">imformant.xyz</h1>
     
-    <!-- Custom Upload Button -->
-    <label for="upload" class="upload-label">UPLOAD</label>
+    <label for="upload" class="upload-label" id="uploadLabel">UPLOAD</label>
     <input type="file" id="upload" accept="image/*">
 
-    <!-- Social Media Icons -->
     <div class="social-media" id="socialMediaLinks">
       <a href="https://warpcast.com/~/channel/imf" target="_blank">
         <img src="farcaster-icon.png" alt="farcaster-icon">
@@ -242,27 +240,26 @@
     </div>
 
     <div id="editorContainer">
-      
       <div class="slider-container" id="sliderControls">
         <div class="slider-control">
           <label for="xSlider">X</label>
-          <input type="range" id="xSlider" min="0" max="100" value="50">
+          <input type="range" id="xSlider" min="0" max="100" value="50" oninput="updateOverlayPosition()">
         </div>
         <div class="slider-control">
           <label for="ySlider">Y</label>
-          <input type="range" id="ySlider" min="0" max="100" value="50">
+          <input type="range" id="ySlider" min="0" max="100" value="50" oninput="updateOverlayPosition()">
         </div>
         <div class="slider-control">
           <label for="sizeSlider">Size</label>
-          <input type="range" id="sizeSlider" min="1" max="5" value="3" step="0.1">
+          <input type="range" id="sizeSlider" min="1" max="5" value="2" step="0.1" oninput="updateOverlaySize()"> <!-- Smaller default size -->
         </div>
         <div class="slider-control">
           <label for="rotationSlider">Rotation</label>
-          <input type="range" id="rotationSlider" min="0" max="360" value="0">
+          <input type="range" id="rotationSlider" min="0" max="360" value="0" oninput="updateOverlayRotation()">
         </div>
         <div class="slider-control">
           <label for="filterSelect">Filter</label>
-          <select id="filterSelect">
+          <select id="filterSelect" onchange="applyFilter()">
             <option value="none">None</option>
             <option value="mosaic">Blur</option>
             <option value="blackWhite">Grayscale</option>
@@ -273,12 +270,14 @@
       <div id="editor">
         <img id="uploadedImage" alt="Upload an image to edit" />
         <div id="overlayText">IMF</div>
+        <img id="overlayImage" alt="Sticker overlay">
       </div>
 
       <div class="button-group" id="stencilGroup">
-        <button id="stencilButton" onclick="toggleStencils()">Stencils</button>
+        <button id="stencilButton" onclick="toggleDropdown('stencilOptions', 'stickerOptions')">Stencils</button>
         <div class="stencil-options" id="stencilOptions">
           <button id="italicizeButton" onclick="toggleItalic()">Italicize</button>
+          <button id="boldButton" onclick="toggleBold()">Bold</button>
           <button onclick="setOverlayText('IMF')">IMF</button>
           <button onclick="setOverlayText('MEME HARDER')">MEME HARDER</button>
           <button onclick="setOverlayText('IMFORMANT')">IMFORMANT</button>
@@ -289,23 +288,27 @@
           <button onclick="setOverlayText('Gmoney')">Gmoney</button>
           <button onclick="setOverlayText('COINSORTIUM')">COINSORTIUM</button>
         </div>
+
+        <button id="stickerButton" onclick="toggleDropdown('stickerOptions', 'stencilOptions')">Stickers</button>
+        <div class="sticker-options" id="stickerOptions">
+          <button onclick="applySticker('hattech.png')">Hat Tech</button>
+          <button onclick="applySticker('moneyblack.png')">Money Logo</button>
+          <button onclick="applySticker('globewhiteblack.png')">Globe #1</button>
+          <button onclick="applySticker('globeredblack.png')">Globe #2</button>
+          <button onclick="applySticker('globewhitered.png')">Globe #3</button>
+        </div>
       </div>
     </div>
 
-    <!-- Download Button -->
     <button id="downloadBtn">Download</button>
   </div>
 
-  <!-- JavaScript logic for image handling, positioning, filters, and download -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script>
+    let activeOverlay = 'stencil';
+
     document.getElementById('upload').addEventListener('change', handleImageUpload);
     document.getElementById('downloadBtn').addEventListener('click', downloadImage);
-    document.getElementById('xSlider').addEventListener('input', updateOverlayPosition);
-    document.getElementById('ySlider').addEventListener('input', updateOverlayPosition);
-    document.getElementById('sizeSlider').addEventListener('input', updateOverlaySize);
-    document.getElementById('rotationSlider').addEventListener('input', updateOverlayRotation);
-    document.getElementById('filterSelect').addEventListener('change', applyFilter);
 
     function handleImageUpload(event) {
       const file = event.target.files[0];
@@ -317,74 +320,82 @@
         imgElement.src = e.target.result;
         imgElement.style.display = 'block';
 
-        // Show necessary buttons after image upload
-        document.querySelector('.upload-label').style.display = 'none';
-        document.getElementById('backArrow').style.display = 'inline';
-        document.getElementById('stencilGroup').style.display = 'flex';
-        document.getElementById('downloadBtn').style.display = 'block';
-        document.getElementById('sliderControls').style.display = 'flex';
-
-        // Hide social media icons after upload
-        document.getElementById('socialMediaLinks').style.display = 'none';
-
-        // Reset overlay text and sliders
-        const overlayText = document.getElementById('overlayText');
-        overlayText.style.display = 'none';
-        document.getElementById('xSlider').value = 50;
-        document.getElementById('ySlider').value = 50;
-        document.getElementById('sizeSlider').value = 3;
-        document.getElementById('rotationSlider').value = 0;
-        overlayText.style.left = '50%';
-        overlayText.style.top = '50%';
+        document.getElementById("mainTitle").classList.replace("main-title", "workspace-title");
+        document.getElementById("uploadLabel").style.display = "none";
+        document.getElementById("socialMediaLinks").style.display = "none";
+        document.getElementById("backArrow").style.display = "inline";
+        document.getElementById("sliderControls").style.display = "flex";
+        document.getElementById("stencilGroup").style.display = "flex";
+        document.getElementById("downloadBtn").style.display = "block";
       };
       reader.readAsDataURL(file);
     }
 
-    function toggleStencils() {
-      const stencilOptions = document.getElementById('stencilOptions');
-      stencilOptions.classList.toggle('show');
+    function toggleDropdown(openId, closeId) {
+      const openDropdown = document.getElementById(openId);
+      const closeDropdown = document.getElementById(closeId);
+      openDropdown.classList.toggle('show');
+      closeDropdown.classList.remove('show');
+      activeOverlay = openId === 'stencilOptions' ? 'stencil' : 'sticker';
+      resetOverlaySettings();
+    }
+
+    function resetOverlaySettings() {
+      document.getElementById("sizeSlider").value = 2; // Smaller initial scale
+      document.getElementById("xSlider").value = 50;
+      document.getElementById("ySlider").value = 50;
+      document.getElementById("rotationSlider").value = 0;
+      updateOverlayPosition();
+      updateOverlaySize();
+      updateOverlayRotation();
     }
 
     function setOverlayText(text) {
       const overlayText = document.getElementById('overlayText');
       overlayText.innerText = text;
       overlayText.style.display = 'block';
+      document.getElementById('overlayImage').style.display = 'none';
+      resetOverlaySettings();
     }
 
     function toggleItalic() {
       const overlayText = document.getElementById('overlayText');
-      const italicizeButton = document.getElementById('italicizeButton');
-      
-      if (overlayText.style.fontStyle === 'italic') {
-        overlayText.style.fontStyle = 'normal';
-        italicizeButton.style.backgroundColor = 'black';
-        italicizeButton.style.color = 'white';
-      } else {
-        overlayText.style.fontStyle = 'italic';
-        italicizeButton.style.backgroundColor = 'white';
-        italicizeButton.style.color = 'black';
-      }
+      overlayText.style.fontStyle = (overlayText.style.fontStyle === 'italic') ? 'normal' : 'italic';
+      document.getElementById('italicizeButton').classList.toggle('active');
+    }
+
+    function toggleBold() {
+      const overlayText = document.getElementById('overlayText');
+      overlayText.style.fontWeight = (overlayText.style.fontWeight === 'bold') ? 'normal' : 'bold';
+      document.getElementById('boldButton').classList.toggle('active');
+    }
+
+    function applySticker(imageSrc) {
+      const overlayImage = document.getElementById('overlayImage');
+      overlayImage.src = imageSrc;
+      overlayImage.style.display = 'block';
+      document.getElementById('overlayText').style.display = 'none';
+      resetOverlaySettings();
     }
 
     function updateOverlayPosition() {
-      const overlayText = document.getElementById('overlayText');
-      const xSlider = document.getElementById('xSlider').value;
-      const ySlider = document.getElementById('ySlider').value;
-
-      overlayText.style.left = `${xSlider}%`;
-      overlayText.style.top = `${ySlider}%`;
+      const x = document.getElementById('xSlider').value;
+      const y = document.getElementById('ySlider').value;
+      const activeElement = activeOverlay === 'stencil' ? document.getElementById('overlayText') : document.getElementById('overlayImage');
+      activeElement.style.left = `${x}%`;
+      activeElement.style.top = `${y}%`;
     }
 
     function updateOverlaySize() {
-      const overlayText = document.getElementById('overlayText');
       const size = document.getElementById('sizeSlider').value;
-      overlayText.style.transform = `translate(-50%, -50%) scale(${size}) rotate(${document.getElementById('rotationSlider').value}deg)`;
+      const activeElement = activeOverlay === 'stencil' ? document.getElementById('overlayText') : document.getElementById('overlayImage');
+      activeElement.style.transform = `translate(-50%, -50%) scale(${size}) rotate(${document.getElementById('rotationSlider').value}deg)`;
     }
 
     function updateOverlayRotation() {
-      const overlayText = document.getElementById('overlayText');
       const rotation = document.getElementById('rotationSlider').value;
-      overlayText.style.transform = `translate(-50%, -50%) scale(${document.getElementById('sizeSlider').value}) rotate(${rotation}deg)`;
+      const activeElement = activeOverlay === 'stencil' ? document.getElementById('overlayText') : document.getElementById('overlayImage');
+      activeElement.style.transform = `translate(-50%, -50%) scale(${document.getElementById('sizeSlider').value}) rotate(${rotation}deg)`;
     }
 
     function applyFilter() {
@@ -412,19 +423,19 @@
 
     function resetEditor() {
       document.getElementById('uploadedImage').style.display = 'none';
-      document.querySelector('.upload-label').style.display = 'inline-block';
-      document.getElementById('backArrow').style.display = 'none';
-      document.getElementById('stencilGroup').style.display = 'none';
-      document.getElementById('downloadBtn').style.display = 'none';
-      document.getElementById('sliderControls').style.display = 'none';
-      document.getElementById('overlayText').style.display = 'none';
-      document.getElementById('upload').value = '';
-
-      // Show social media icons again on reset
-      document.getElementById('socialMediaLinks').style.display = 'flex';
+      document.getElementById('mainTitle').classList.replace("workspace-title", "main-title");
+      document.getElementById("uploadLabel").style.display = "inline-block";
+      document.getElementById("socialMediaLinks").style.display = "flex";
+      document.getElementById("backArrow").style.display = "none";
+      document.getElementById("sliderControls").style.display = "none";
+      document.getElementById("stencilGroup").style.display = "none";
+      document.getElementById("downloadBtn").style.display = "none";
+      document.getElementById("overlayText").style.display = "none";
+      document.getElementById("overlayText").style.fontStyle = "normal";
+      document.getElementById("overlayText").style.fontWeight = "normal";
+      document.getElementById("overlayImage").style.display = "none";
+      document.getElementById("upload").value = '';
     }
-
-    document.getElementById('backArrow').addEventListener('click', resetEditor);
   </script>
 </body>
 </html>
