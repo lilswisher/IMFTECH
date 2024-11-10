@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IMF Image Editor</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <h1>IMF Image Editor</h1>
+    <input type="file" id="upload" accept="image/*">
+    <div id="editor">
+      <img id="uploadedImage" alt="Upload an image to edit" />
+      <div id="imfText">IMF</div>
+    </div>
+    <button id="addTextBtn">Add "IMF"</button>
+    <button id="downloadBtn">Download</button>
+  </div>
+
+  <!-- JavaScript files -->
+  <script src="script.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+</body>
+</html>
+
