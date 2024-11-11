@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>imformant.xyz</title>
   <style>
-    /* General reset and styling */
     * {
       margin: 0;
       padding: 0;
@@ -20,7 +19,7 @@
       justify-content: center;
       min-height: 100vh;
       font-family: Arial, sans-serif;
-      overflow: hidden; /* Prevents scroll bars */
+      overflow: hidden;
     }
 
     .container {
@@ -29,7 +28,7 @@
       align-items: center;
       text-align: center;
       width: 100%;
-      max-width: 90vw; /* Adjusts width for smaller screens */
+      max-width: 90vw;
     }
 
     h1 {
@@ -39,7 +38,7 @@
     }
 
     .main-title {
-      font-size: 3vw; /* Scales based on viewport width */
+      font-size: 3vw;
     }
 
     .workspace-title {
@@ -54,10 +53,9 @@
       top: 20px;
       left: 20px;
       display: none;
-      transition: width 0.3s, height 0.3s; /* Smooth transition for resizing */
+      transition: width 0.3s, height 0.3s;
     }
 
-    /* Media query for smaller displays (laptops and tablets) */
     @media (max-width: 1024px) {
       #backArrow {
         width: 20px;
@@ -65,7 +63,6 @@
       }
     }
 
-    /* Media query for mobile screens */
     @media (max-width: 768px) {
       #backArrow {
         width: 15px;
@@ -117,25 +114,28 @@
       justify-content: center;
       gap: 2vw;
       margin-top: 2vh;
+      width: 100%;
+      max-width: 60vw;
+      height: auto;
     }
 
     #editor {
       position: relative;
       width: 100%;
-      max-width: 80vw;
+      max-width: 100%;
       height: auto;
       display: flex;
       align-items: center;
       justify-content: center;
-      overflow: hidden;
+      overflow: hidden; /* Clips the overlays within the editor */
     }
 
     #uploadedImage {
       width: 100%;
       height: 100%;
-      object-fit: cover;
+      object-fit: contain;
       display: none;
-      max-height: 60vh; /* Limits image height */
+      max-height: 60vh;
       transition: filter 0.3s;
     }
 
@@ -144,7 +144,7 @@
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%) scale(0.6);
-      font-size: 2.5vw; /* Adapts text size for smaller screens */
+      font-size: 2.5vw;
       color: white;
       display: none;
       pointer-events: none;
@@ -235,18 +235,20 @@
       margin-top: 15px;
     }
 
-    /* Adjustments for screens 768px or smaller (mobile) */
     @media (max-width: 768px) {
       .main-title {
         font-size: 4vw;
       }
-      
+
       #editorContainer {
         flex-direction: column;
+        width: 100vw;
+        height: 100vh;
+        max-width: 90vw;
       }
 
       #uploadedImage {
-        max-height: 50vh; /* Reduces image size on smaller screens */
+        max-height: 50vh;
       }
 
       .slider-container {
@@ -261,7 +263,6 @@
   </style>
 </head>
 <body>
-  <!-- Back Arrow in Top Left -->
   <img id="backArrow" src="backarrow-icon.png" alt="Back" onclick="resetEditor()">
 
   <div class="container">
@@ -365,6 +366,7 @@
         imgElement.src = e.target.result;
         imgElement.style.display = 'block';
 
+        document.body.style.overflow = 'auto';
         document.getElementById("mainTitle").classList.replace("main-title", "workspace-title");
         document.getElementById("uploadLabel").style.display = "none";
         document.getElementById("socialMediaLinks").style.display = "none";
