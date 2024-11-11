@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>IMF Image Editor</title>
+  <title>imformant.xyz</title>
   <style>
     /* General reset and styling */
     * {
@@ -20,6 +20,7 @@
       justify-content: center;
       min-height: 100vh;
       font-family: Arial, sans-serif;
+      overflow: hidden; /* Prevents scroll bars */
     }
 
     .container {
@@ -27,6 +28,8 @@
       flex-direction: column;
       align-items: center;
       text-align: center;
+      width: 100%;
+      max-width: 90vw; /* Adjusts width for smaller screens */
     }
 
     h1 {
@@ -36,7 +39,7 @@
     }
 
     .main-title {
-      font-size: 3em;
+      font-size: 3vw; /* Scales based on viewport width */
     }
 
     .workspace-title {
@@ -51,6 +54,23 @@
       top: 20px;
       left: 20px;
       display: none;
+      transition: width 0.3s, height 0.3s; /* Smooth transition for resizing */
+    }
+
+    /* Media query for smaller displays (laptops and tablets) */
+    @media (max-width: 1024px) {
+      #backArrow {
+        width: 20px;
+        height: 20px;
+      }
+    }
+
+    /* Media query for mobile screens */
+    @media (max-width: 768px) {
+      #backArrow {
+        width: 15px;
+        height: 15px;
+      }
     }
 
     #upload {
@@ -95,8 +115,8 @@
       display: flex;
       align-items: flex-start;
       justify-content: center;
-      gap: 40px;
-      margin-top: 20px;
+      gap: 2vw;
+      margin-top: 2vh;
     }
 
     #editor {
@@ -115,6 +135,7 @@
       height: 100%;
       object-fit: cover;
       display: none;
+      max-height: 60vh; /* Limits image height */
       transition: filter 0.3s;
     }
 
@@ -122,19 +143,12 @@
       position: absolute;
       top: 50%;
       left: 50%;
-      transform: translate(-50%, -50%) scale(0.6); /* Start with a smaller scale */
-      font-size: 3em;
-      font-style: normal;
-      font-weight: normal;
+      transform: translate(-50%, -50%) scale(0.6);
+      font-size: 2.5vw; /* Adapts text size for smaller screens */
       color: white;
       display: none;
       pointer-events: none;
-      transition: transform 0.3s;
-    }
-
-    #overlayImage {
-      max-width: 50%;
-      max-height: 50%;
+      transition: transform 0.3s, filter 0.3s;
     }
 
     .button-group {
@@ -157,6 +171,11 @@
     }
 
     button:hover {
+      background-color: white;
+      color: black;
+    }
+
+    .active-button {
       background-color: white;
       color: black;
     }
@@ -215,6 +234,30 @@
     #downloadBtn {
       margin-top: 15px;
     }
+
+    /* Adjustments for screens 768px or smaller (mobile) */
+    @media (max-width: 768px) {
+      .main-title {
+        font-size: 4vw;
+      }
+      
+      #editorContainer {
+        flex-direction: column;
+      }
+
+      #uploadedImage {
+        max-height: 50vh; /* Reduces image size on smaller screens */
+      }
+
+      .slider-container {
+        width: 90vw;
+      }
+
+      button {
+        width: 100%;
+        font-size: 0.9em;
+      }
+    }
   </style>
 </head>
 <body>
@@ -251,7 +294,7 @@
         </div>
         <div class="slider-control">
           <label for="sizeSlider">Size</label>
-          <input type="range" id="sizeSlider" min="1" max="5" value="2" step="0.1" oninput="updateOverlaySize()"> <!-- Smaller default size -->
+          <input type="range" id="sizeSlider" min="1" max="5" value="2" step="0.1" oninput="updateOverlaySize()">
         </div>
         <div class="slider-control">
           <label for="rotationSlider">Rotation</label>
@@ -263,6 +306,8 @@
             <option value="none">None</option>
             <option value="mosaic">Blur</option>
             <option value="blackWhite">Grayscale</option>
+            <option value="invert">Invert</option>
+            <option value="contrast">High Contrast</option>
           </select>
         </div>
       </div>
@@ -341,7 +386,7 @@
     }
 
     function resetOverlaySettings() {
-      document.getElementById("sizeSlider").value = 2; // Smaller initial scale
+      document.getElementById("sizeSlider").value = 2;
       document.getElementById("xSlider").value = 50;
       document.getElementById("ySlider").value = 50;
       document.getElementById("rotationSlider").value = 0;
@@ -359,15 +404,17 @@
     }
 
     function toggleItalic() {
+      const italicButton = document.getElementById('italicizeButton');
       const overlayText = document.getElementById('overlayText');
       overlayText.style.fontStyle = (overlayText.style.fontStyle === 'italic') ? 'normal' : 'italic';
-      document.getElementById('italicizeButton').classList.toggle('active');
+      italicButton.classList.toggle('active-button');
     }
 
     function toggleBold() {
+      const boldButton = document.getElementById('boldButton');
       const overlayText = document.getElementById('overlayText');
       overlayText.style.fontWeight = (overlayText.style.fontWeight === 'bold') ? 'normal' : 'bold';
-      document.getElementById('boldButton').classList.toggle('active');
+      boldButton.classList.toggle('active-button');
     }
 
     function applySticker(imageSrc) {
@@ -375,6 +422,10 @@
       overlayImage.src = imageSrc;
       overlayImage.style.display = 'block';
       document.getElementById('overlayText').style.display = 'none';
+
+      overlayImage.style.width = "20%";
+      overlayImage.style.height = "auto";
+
       resetOverlaySettings();
     }
 
@@ -401,14 +452,21 @@
     function applyFilter() {
       const filterSelect = document.getElementById('filterSelect').value;
       const imgElement = document.getElementById('uploadedImage');
+      const overlayImage = document.getElementById('overlayImage');
 
+      let filter = 'none';
       if (filterSelect === 'mosaic') {
-        imgElement.style.filter = 'blur(5px)';
+        filter = 'blur(5px)';
       } else if (filterSelect === 'blackWhite') {
-        imgElement.style.filter = 'grayscale(100%)';
-      } else {
-        imgElement.style.filter = 'none';
+        filter = 'grayscale(100%)';
+      } else if (filterSelect === 'invert') {
+        filter = 'invert(100%)';
+      } else if (filterSelect === 'contrast') {
+        filter = 'contrast(200%)';
       }
+
+      imgElement.style.filter = filter;
+      overlayImage.style.filter = filter;
     }
 
     function downloadImage() {
