@@ -176,17 +176,12 @@
       transition: 0.3s;
     }
 
-    button:hover {
+    button:hover, .active-button {
       background-color: white;
       color: black;
     }
 
-    .active-button {
-      background-color: white;
-      color: black;
-    }
-
-    .stencil-options, .sticker-options {
+    .stencil-options, .sticker-options, .filter-options {
       display: flex;
       flex-direction: column;
       gap: 5px;
@@ -204,7 +199,7 @@
       visibility: hidden;
     }
 
-    .stencil-options.show, .sticker-options.show {
+    .stencil-options.show, .sticker-options.show, .filter-options.show {
       opacity: 1;
       visibility: visible;
     }
@@ -232,11 +227,11 @@
       width: 100%;
     }
 
-    .slider-container input[type="range"], .slider-container select {
+    .slider-container input[type="range"] {
       width: 100%;
     }
 
-    .slider-container, #downloadBtn, #stencilGroup, #stickerGroup {
+    .slider-container, #downloadBtn, #stencilGroup, #stickerGroup, #filterGroup {
       display: none;
     }
 
@@ -288,11 +283,11 @@
       }
 
       /* Hide desktop buttons and show dropdowns */
-      #stencilButton, #stickerButton {
+      #stencilButton, #stickerButton, #filterButton {
         display: none;
       }
 
-      #stencilDropdown, #stickerDropdown {
+      #stencilDropdown, #stickerDropdown, #filterDropdown {
         display: block;
         width: 100%;
         max-width: 220px;
@@ -306,7 +301,7 @@
 
     /* Show buttons and hide dropdowns on desktop */
     @media (min-width: 769px) {
-      #stencilDropdown, #stickerDropdown {
+      #stencilDropdown, #stickerDropdown, #filterDropdown {
         display: none;
       }
     }
@@ -351,16 +346,6 @@
           <label for="rotationSlider">Rotation</label>
           <input type="range" id="rotationSlider" min="0" max="360" value="0" oninput="updateOverlayRotation()">
         </div>
-        <div class="slider-control">
-          <label for="filterSelect">Filter</label>
-          <select id="filterSelect" onchange="applyFilter()">
-            <option value="none">None</option>
-            <option value="mosaic">Blur</option>
-            <option value="blackWhite">Grayscale</option>
-            <option value="invert">Invert</option>
-            <option value="contrast">High Contrast</option>
-          </select>
-        </div>
       </div>
 
       <div id="editor">
@@ -369,7 +354,7 @@
         <img id="overlayImage" alt="Sticker overlay">
       </div>
 
-      <!-- Desktop Buttons for Stencils and Stickers -->
+      <!-- Desktop Buttons for Stencils, Stickers, and Filter -->
       <div class="button-group" id="stencilGroup">
         <button id="stencilButton" onclick="toggleDropdown('stencilOptions', 'stencilButton')">Stencils</button>
         <div class="stencil-options" id="stencilOptions">
@@ -387,11 +372,18 @@
           <button onclick="applySticker('moneyblack.png', this)">Money Logo</button>
           <button onclick="applySticker('globewhiteblack.png', this)">Globe #1</button>
           <button onclick="applySticker('globeredblack.png', this)">Globe #2</button>
-          <button onclick="applySticker('globewhitered.png', this)">Globe #3</button>
+        </div>
+
+        <button id="filterButton" onclick="toggleDropdown('filterOptions', 'filterButton')">Filters</button>
+        <div class="filter-options" id="filterOptions">
+          <button onclick="toggleFilter('mosaic', this)">Blur</button>
+          <button onclick="toggleFilter('blackWhite', this)">Grayscale</button>
+          <button onclick="toggleFilter('invert', this)">Invert</button>
+          <button onclick="toggleFilter('contrast', this)">High Contrast</button>
         </div>
       </div>
 
-      <!-- Mobile Dropdowns for Stencils and Stickers -->
+      <!-- Mobile Dropdowns for Stencils, Stickers, and Filter -->
       <select id="stencilDropdown" onchange="selectStencil(this.value)">
         <option value="" disabled selected>Select Stencil</option>
         <option value="IMF">IMF</option>
@@ -408,7 +400,14 @@
         <option value="moneyblack.png">Money Logo</option>
         <option value="globewhiteblack.png">Globe #1</option>
         <option value="globeredblack.png">Globe #2</option>
-        <option value="globewhitered.png">Globe #3</option>
+      </select>
+
+      <select id="filterDropdown" multiple onchange="applyMobileFilters()">
+        <option value="none" selected>None</option>
+        <option value="mosaic">Blur</option>
+        <option value="blackWhite">Grayscale</option>
+        <option value="invert">Invert</option>
+        <option value="contrast">High Contrast</option>
       </select>
     </div>
 
@@ -419,6 +418,7 @@
   <script>
     let activeOverlay = 'stencil';
     let activeButton = null;
+    let activeFilters = {};
 
     document.getElementById('upload').addEventListener('change', handleImageUpload);
     document.getElementById('downloadBtn').addEventListener('click', downloadImage);
@@ -448,13 +448,18 @@
       const dropdown = document.getElementById(dropdownId);
       const button = document.getElementById(buttonId);
 
-      if (dropdown.classList.contains('show')) {
-        dropdown.classList.remove('show');
+      // Close other dropdowns if they're open
+      document.querySelectorAll(".stencil-options, .sticker-options, .filter-options").forEach((el) => {
+        if (el !== dropdown) el.classList.remove("show");
+      });
+
+      if (dropdown.classList.contains("show")) {
+        dropdown.classList.remove("show");
       } else {
         const buttonRect = button.getBoundingClientRect();
         dropdown.style.top = `${buttonRect.bottom}px`;
         dropdown.style.left = `${buttonRect.left}px`;
-        dropdown.classList.add('show');
+        dropdown.classList.add("show");
       }
     }
 
@@ -547,24 +552,42 @@
       activeElement.style.transform = `translate(-50%, -50%) scale(${document.getElementById('sizeSlider').value}) rotate(${rotation}deg)`;
     }
 
-    function applyFilter() {
-      const filterSelect = document.getElementById('filterSelect').value;
-      const imgElement = document.getElementById('uploadedImage');
-      const overlayImage = document.getElementById('overlayImage');
+    function toggleFilter(filter, button) {
+      if (activeFilters[filter]) {
+        delete activeFilters[filter];
+        button.classList.remove("active-button");
+      } else {
+        activeFilters[filter] = true;
+        button.classList.add("active-button");
+      }
+      applyFilters();
+    }
 
-      let filter = 'none';
-      if (filterSelect === 'mosaic') {
-        filter = 'blur(5px)';
-      } else if (filterSelect === 'blackWhite') {
-        filter = 'grayscale(100%)';
-      } else if (filterSelect === 'invert') {
-        filter = 'invert(100%)';
-      } else if (filterSelect === 'contrast') {
-        filter = 'contrast(200%)';
+    function applyFilters() {
+      const imgElement = document.getElementById("uploadedImage");
+      const overlayImage = document.getElementById("overlayImage");
+
+      let filterString = "";
+      if (activeFilters["mosaic"]) filterString += " blur(5px)";
+      if (activeFilters["blackWhite"]) filterString += " grayscale(100%)";
+      if (activeFilters["invert"]) filterString += " invert(100%)";
+      if (activeFilters["contrast"]) filterString += " contrast(200%)";
+
+      imgElement.style.filter = filterString.trim();
+      overlayImage.style.filter = filterString.trim();
+    }
+
+    function applyMobileFilters() {
+      const selectedOptions = Array.from(document.getElementById("filterDropdown").selectedOptions);
+      const selectedFilters = selectedOptions.map(option => option.value);
+
+      if (selectedFilters.includes("none")) {
+        activeFilters = {};
+      } else {
+        activeFilters = selectedFilters.reduce((acc, filter) => ({ ...acc, [filter]: true }), {});
       }
 
-      imgElement.style.filter = filter;
-      overlayImage.style.filter = filter;
+      applyFilters();
     }
 
     function downloadImage() {
@@ -591,6 +614,8 @@
       document.getElementById("overlayText").style.fontWeight = "normal";
       document.getElementById("overlayImage").style.display = "none";
       document.getElementById("upload").value = '';
+      activeFilters = {};
+      applyFilters();
       if (activeButton) activeButton.classList.remove('active-button');
       activeButton = null;
     }
