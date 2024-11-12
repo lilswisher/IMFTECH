@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
   <title>imformant.xyz</title>
   <style>
     * {
@@ -11,7 +11,8 @@
       box-sizing: border-box;
     }
 
-    body {
+    body, html {
+      overflow: hidden;
       background-color: black;
       color: white;
       display: flex;
@@ -83,6 +84,7 @@
       cursor: pointer;
       transition: background-color 0.3s, transform 0.3s;
       text-align: center;
+      margin-top: 20px;
     }
 
     .upload-label:hover {
@@ -114,8 +116,9 @@
       gap: 2vw;
       margin-top: 2vh;
       width: 100%;
-      max-width: 80vw;
+      max-width: 100vw;
       height: auto;
+      max-height: 100vh;
     }
 
     #editor {
@@ -132,9 +135,10 @@
     #uploadedImage {
       width: 100%;
       height: 100%;
+      max-width: 100%;
+      max-height: 80vh;
       object-fit: contain;
       display: none;
-      max-height: 100%;
       transition: filter 0.3s;
     }
 
@@ -148,6 +152,8 @@
       display: none;
       pointer-events: none;
       transition: transform 0.3s, filter 0.3s;
+      max-width: 100%;
+      max-height: 100%;
     }
 
     .button-group {
@@ -184,22 +190,23 @@
       display: flex;
       flex-direction: column;
       gap: 5px;
-      position: absolute;
-      top: 100%;
-      left: 0;
+      position: fixed;
       padding: 10px;
       background-color: black;
       border: 2px solid white;
       border-radius: 8px;
-      max-height: 0;
+      max-height: 80vh;
+      width: 150px;
       opacity: 0;
       overflow-y: auto;
-      transition: max-height 0.3s ease, opacity 0.3s ease;
+      transition: opacity 0.3s ease, visibility 0.3s ease;
+      z-index: 10;
+      visibility: hidden;
     }
 
     .stencil-options.show, .sticker-options.show {
-      max-height: 500px;
       opacity: 1;
+      visibility: visible;
     }
 
     .slider-container {
@@ -237,15 +244,28 @@
       margin-top: 15px;
     }
 
+    /* Center content on mobile devices */
     @media (max-width: 768px) {
+      html, body {
+        flex-direction: column;
+        justify-content: center;
+        height: 100vh;
+      }
+
+      .container {
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+      }
+
       .main-title {
         font-size: 4vw;
       }
 
       #editorContainer {
         flex-direction: column;
-        width: 100vw;
-        height: 100vh;
+        width: 90vw;
+        height: 80vh;
         max-width: 90vw;
       }
 
@@ -323,28 +343,25 @@
       </div>
 
       <div class="button-group" id="stencilGroup">
-        <button id="stencilButton" onclick="toggleDropdown('stencilOptions', 'stickerOptions')">Stencils</button>
+        <button id="stencilButton" onclick="toggleDropdown('stencilOptions', 'stencilButton')">Stencils</button>
         <div class="stencil-options" id="stencilOptions">
           <button id="italicizeButton" onclick="toggleItalic()">Italicize</button>
           <button id="boldButton" onclick="toggleBold()">Bold</button>
-          <button onclick="setOverlayText('IMF')">IMF</button>
-          <button onclick="setOverlayText('MEME HARDER')">MEME HARDER</button>
-          <button onclick="setOverlayText('IMFORMANT')">IMFORMANT</button>
-          <button onclick="setOverlayText('MEME ON A MISSION')">MEME ON A MISSION</button>
-          <button onclick="setOverlayText('pre-rich')">pre-rich</button>
-          <button onclick="setOverlayText('$MONEY')">$MONEY</button>
-          <button onclick="setOverlayText('$IMF')">$IMF</button>
-          <button onclick="setOverlayText('Gmoney')">Gmoney</button>
-          <button onclick="setOverlayText('COINSORTIUM')">COINSORTIUM</button>
+          <button onclick="setOverlayText('IMF', this)">IMF</button>
+          <button onclick="setOverlayText('IMFORMANT', this)">IMFORMANT</button>
+          <button onclick="setOverlayText('MEME ON A MISSION', this)">MEME ON A MISSION</button>
+          <button onclick="setOverlayText('$MONEY', this)">$MONEY</button>
+          <button onclick="setOverlayText('$IMF', this)">$IMF</button>
+          <button onclick="setOverlayText('Gmoney', this)">Gmoney</button>
         </div>
 
-        <button id="stickerButton" onclick="toggleDropdown('stickerOptions', 'stencilOptions')">Stickers</button>
+        <button id="stickerButton" onclick="toggleDropdown('stickerOptions', 'stickerButton')">Stickers</button>
         <div class="sticker-options" id="stickerOptions">
-          <button onclick="applySticker('hattech.png')">Hat Tech</button>
-          <button onclick="applySticker('moneyblack.png')">Money Logo</button>
-          <button onclick="applySticker('globewhiteblack.png')">Globe #1</button>
-          <button onclick="applySticker('globeredblack.png')">Globe #2</button>
-          <button onclick="applySticker('globewhitered.png')">Globe #3</button>
+          <button onclick="applySticker('hattech.png', this)">Hat Tech</button>
+          <button onclick="applySticker('moneyblack.png', this)">Money Logo</button>
+          <button onclick="applySticker('globewhiteblack.png', this)">Globe #1</button>
+          <button onclick="applySticker('globeredblack.png', this)">Globe #2</button>
+          <button onclick="applySticker('globewhitered.png', this)">Globe #3</button>
         </div>
       </div>
     </div>
@@ -355,6 +372,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script>
     let activeOverlay = 'stencil';
+    let activeButton = null;
 
     document.getElementById('upload').addEventListener('change', handleImageUpload);
     document.getElementById('downloadBtn').addEventListener('click', downloadImage);
@@ -380,13 +398,18 @@
       reader.readAsDataURL(file);
     }
 
-    function toggleDropdown(openId, closeId) {
-      const openDropdown = document.getElementById(openId);
-      const closeDropdown = document.getElementById(closeId);
-      openDropdown.classList.toggle('show');
-      closeDropdown.classList.remove('show');
-      activeOverlay = openId === 'stencilOptions' ? 'stencil' : 'sticker';
-      resetOverlaySettings();
+    function toggleDropdown(dropdownId, buttonId) {
+      const dropdown = document.getElementById(dropdownId);
+      const button = document.getElementById(buttonId);
+
+      if (dropdown.classList.contains('show')) {
+        dropdown.classList.remove('show');
+      } else {
+        const buttonRect = button.getBoundingClientRect();
+        dropdown.style.top = `${buttonRect.bottom}px`;
+        dropdown.style.left = `${buttonRect.left}px`;
+        dropdown.classList.add('show');
+      }
     }
 
     function resetOverlaySettings() {
@@ -399,12 +422,21 @@
       updateOverlayRotation();
     }
 
-    function setOverlayText(text) {
-      const overlayText = document.getElementById('overlayText');
-      overlayText.innerText = text;
-      overlayText.style.display = 'block';
-      document.getElementById('overlayImage').style.display = 'none';
-      resetOverlaySettings();
+    function setOverlayText(text, button) {
+      if (activeButton === button) {
+        document.getElementById('overlayText').style.display = 'none';
+        activeButton.classList.remove('active-button');
+        activeButton = null;
+      } else {
+        if (activeButton) activeButton.classList.remove('active-button');
+        activeButton = button;
+        activeButton.classList.add('active-button');
+        document.getElementById('overlayText').innerText = text;
+        document.getElementById('overlayText').style.display = 'block';
+        document.getElementById('overlayImage').style.display = 'none';
+        activeOverlay = 'stencil';
+        resetOverlaySettings();
+      }
     }
 
     function toggleItalic() {
@@ -421,16 +453,24 @@
       boldButton.classList.toggle('active-button');
     }
 
-    function applySticker(imageSrc) {
-      const overlayImage = document.getElementById('overlayImage');
-      overlayImage.src = imageSrc;
-      overlayImage.style.display = 'block';
-      document.getElementById('overlayText').style.display = 'none';
-
-      overlayImage.style.width = "20%";
-      overlayImage.style.height = "auto";
-
-      resetOverlaySettings();
+    function applySticker(imageSrc, button) {
+      if (activeButton === button) {
+        document.getElementById('overlayImage').style.display = 'none';
+        activeButton.classList.remove('active-button');
+        activeButton = null;
+      } else {
+        if (activeButton) activeButton.classList.remove('active-button');
+        activeButton = button;
+        activeButton.classList.add('active-button');
+        const overlayImage = document.getElementById('overlayImage');
+        overlayImage.src = imageSrc;
+        overlayImage.style.display = 'block';
+        document.getElementById('overlayText').style.display = 'none';
+        activeOverlay = 'sticker';
+        overlayImage.style.width = "20%";
+        overlayImage.style.height = "auto";
+        resetOverlaySettings();
+      }
     }
 
     function updateOverlayPosition() {
@@ -497,7 +537,16 @@
       document.getElementById("overlayText").style.fontWeight = "normal";
       document.getElementById("overlayImage").style.display = "none";
       document.getElementById("upload").value = '';
+      if (activeButton) activeButton.classList.remove('active-button');
+      activeButton = null;
     }
+
+    window.addEventListener('resize', () => {
+      const editorContainer = document.getElementById('editorContainer');
+      const isMobile = window.innerWidth < 768;
+      editorContainer.style.width = isMobile ? '90vw' : '80vw';
+      editorContainer.style.height = isMobile ? '80vh' : 'auto';
+    });
   </script>
 </body>
 </html>
