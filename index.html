@@ -46,8 +46,8 @@
     }
 
     #backArrow {
-      width: 30px;
-      height: 30px;
+      width: 25px; /* Adjusted size for desktop */
+      height: 25px;
       cursor: pointer;
       position: absolute;
       top: 20px;
@@ -199,7 +199,7 @@
       visibility: hidden;
     }
 
-    .stencil-options.show, .sticker-options.show, .filter-options.show {
+    .show {
       opacity: 1;
       visibility: visible;
     }
@@ -214,11 +214,6 @@
       margin-right: 25px;
     }
 
-    .slider-container label {
-      font-size: 1em;
-      margin-bottom: 5px;
-    }
-
     .slider-control {
       display: flex;
       align-items: center;
@@ -231,7 +226,7 @@
       width: 100%;
     }
 
-    .slider-container, #downloadBtn, #stencilGroup, #stickerGroup, #filterGroup {
+    .slider-container, #downloadBtn, #stencilGroup, #stickerGroup {
       display: none;
     }
 
@@ -280,29 +275,6 @@
       button {
         width: 100%;
         font-size: 0.9em;
-      }
-
-      /* Hide desktop buttons and show dropdowns */
-      #stencilButton, #stickerButton, #filterButton {
-        display: none;
-      }
-
-      #stencilDropdown, #stickerDropdown, #filterDropdown {
-        display: block;
-        width: 100%;
-        max-width: 220px;
-        padding: 10px;
-        font-size: 1em;
-        border: 2px solid white;
-        background-color: black;
-        color: white;
-      }
-    }
-
-    /* Show buttons and hide dropdowns on desktop */
-    @media (min-width: 769px) {
-      #stencilDropdown, #stickerDropdown, #filterDropdown {
-        display: none;
       }
     }
   </style>
@@ -354,10 +326,11 @@
         <img id="overlayImage" alt="Sticker overlay">
       </div>
 
-      <!-- Desktop Buttons for Stencils, Stickers, and Filter -->
       <div class="button-group" id="stencilGroup">
         <button id="stencilButton" onclick="toggleDropdown('stencilOptions', 'stencilButton')">Stencils</button>
         <div class="stencil-options" id="stencilOptions">
+          <button id="italicizeButton" onclick="toggleItalic()">Italicize</button>
+          <button id="boldButton" onclick="toggleBold()">Bold</button>
           <button onclick="setOverlayText('IMF', this)">IMF</button>
           <button onclick="setOverlayText('IMFORMANT', this)">IMFORMANT</button>
           <button onclick="setOverlayText('MEME ON A MISSION', this)">MEME ON A MISSION</button>
@@ -382,33 +355,6 @@
           <button onclick="toggleFilter('contrast', this)">High Contrast</button>
         </div>
       </div>
-
-      <!-- Mobile Dropdowns for Stencils, Stickers, and Filter -->
-      <select id="stencilDropdown" onchange="selectStencil(this.value)">
-        <option value="" disabled selected>Select Stencil</option>
-        <option value="IMF">IMF</option>
-        <option value="IMFORMANT">IMFORMANT</option>
-        <option value="MEME ON A MISSION">MEME ON A MISSION</option>
-        <option value="$MONEY">$MONEY</option>
-        <option value="$IMF">$IMF</option>
-        <option value="Gmoney">Gmoney</option>
-      </select>
-
-      <select id="stickerDropdown" onchange="selectSticker(this.value)">
-        <option value="" disabled selected>Select Sticker</option>
-        <option value="hattech.png">Hat Tech</option>
-        <option value="moneyblack.png">Money Logo</option>
-        <option value="globewhiteblack.png">Globe #1</option>
-        <option value="globeredblack.png">Globe #2</option>
-      </select>
-
-      <select id="filterDropdown" multiple onchange="applyMobileFilters()">
-        <option value="none" selected>None</option>
-        <option value="mosaic">Blur</option>
-        <option value="blackWhite">Grayscale</option>
-        <option value="invert">Invert</option>
-        <option value="contrast">High Contrast</option>
-      </select>
     </div>
 
     <button id="downloadBtn">Download</button>
@@ -418,7 +364,8 @@
   <script>
     let activeOverlay = 'stencil';
     let activeButton = null;
-    let activeFilters = {};
+    let activeDropdown = null;
+    let appliedFilters = {};
 
     document.getElementById('upload').addEventListener('change', handleImageUpload);
     document.getElementById('downloadBtn').addEventListener('click', downloadImage);
@@ -448,18 +395,122 @@
       const dropdown = document.getElementById(dropdownId);
       const button = document.getElementById(buttonId);
 
-      // Close other dropdowns if they're open
-      document.querySelectorAll(".stencil-options, .sticker-options, .filter-options").forEach((el) => {
-        if (el !== dropdown) el.classList.remove("show");
-      });
-
-      if (dropdown.classList.contains("show")) {
-        dropdown.classList.remove("show");
+      if (activeDropdown && activeDropdown !== dropdown) {
+        activeDropdown.classList.remove('show');
+        setTimeout(() => {
+          dropdown.classList.add('show');
+          dropdown.style.top = `${button.getBoundingClientRect().bottom}px`;
+          dropdown.style.left = `${button.getBoundingClientRect().left}px`;
+          activeDropdown = dropdown;
+        }, 300);
       } else {
-        const buttonRect = button.getBoundingClientRect();
-        dropdown.style.top = `${buttonRect.bottom}px`;
-        dropdown.style.left = `${buttonRect.left}px`;
-        dropdown.classList.add("show");
+        if (dropdown.classList.contains('show')) {
+          dropdown.classList.remove('show');
+          activeDropdown = null;
+        } else {
+          dropdown.classList.add('show');
+          dropdown.style.top = `${button.getBoundingClientRect().bottom}px`;
+          dropdown.style.left = `${button.getBoundingClientRect().left}px`;
+          activeDropdown = dropdown;
+        }
+      }
+    }
+
+    function setOverlayText(text, button) {
+      const overlayText = document.getElementById('overlayText');
+      if (activeButton === button) {
+        overlayText.style.display = 'none';
+        activeButton.classList.remove('active-button');
+        activeButton = null;
+      } else {
+        if (activeButton) activeButton.classList.remove('active-button');
+        activeButton = button;
+        activeButton.classList.add('active-button');
+        overlayText.innerText = text;
+        overlayText.style.display = 'block';
+        document.getElementById('overlayImage').style.display = 'none';
+        activeOverlay = 'stencil';
+        resetOverlaySettings();
+      }
+    }
+
+    function applySticker(imageSrc, button) {
+      const overlayImage = document.getElementById('overlayImage');
+      if (activeButton === button) {
+        overlayImage.style.display = 'none';
+        activeButton.classList.remove('active-button');
+        activeButton = null;
+      } else {
+        if (activeButton) activeButton.classList.remove('active-button');
+        activeButton = button;
+        activeButton.classList.add('active-button');
+        overlayImage.src = imageSrc;
+        overlayImage.style.display = 'block';
+        document.getElementById('overlayText').style.display = 'none';
+        activeOverlay = 'sticker';
+        overlayImage.style.width = "30%"; // Set initial size to 30%
+        overlayImage.style.height = "auto";
+        resetOverlaySettings();
+      }
+    }
+
+    function toggleFilter(filter, button) {
+      if (appliedFilters[filter]) {
+        delete appliedFilters[filter];
+        button.classList.remove('active-button');
+      } else {
+        appliedFilters[filter] = true;
+        button.classList.add('active-button');
+      }
+      applyCombinedFilters();
+    }
+
+    function applyCombinedFilters() {
+      const imgElement = document.getElementById('uploadedImage');
+      const overlayImage = document.getElementById('overlayImage');
+      
+      let filterStyles = [];
+      if (appliedFilters['mosaic']) filterStyles.push('blur(5px)');
+      if (appliedFilters['blackWhite']) filterStyles.push('grayscale(100%)');
+      if (appliedFilters['invert']) filterStyles.push('invert(100%)');
+      if (appliedFilters['contrast']) filterStyles.push('contrast(200%)');
+
+      const combinedFilter = filterStyles.join(' ');
+      imgElement.style.filter = combinedFilter;
+      overlayImage.style.filter = combinedFilter;
+    }
+
+    function downloadImage() {
+      const editor = document.getElementById('editor');
+      html2canvas(editor, { backgroundColor: null }).then(canvas => {
+        const link = document.createElement('a');
+        link.href = canvas.toDataURL('image/png');
+        link.download = 'edited-image.png';
+        link.click();
+      });
+    }
+
+    function toggleItalic() {
+      const italicButton = document.getElementById('italicizeButton');
+      const overlayText = document.getElementById('overlayText');
+      if (overlayText.style.fontStyle === 'italic') {
+        overlayText.style.fontStyle = 'normal';
+        italicButton.classList.remove('active-button');
+      } else {
+        overlayText.style.fontStyle = 'italic';
+        italicButton.classList.add('active-button');
+      }
+    }
+
+    function toggleBold() {
+      const boldButton = document.getElementById('boldButton');
+      const overlayText = document.getElementById('overlayText');
+      if (overlayText.style.fontWeight === 'bold') {
+        overlayText.style.fontWeight = 'normal';
+        boldButton.classList.remove('active-button');
+      } else {
+        overlayText.style.fontWeight = 'bold';
+        boldButton.classList.add('active-button');
       }
     }
 
@@ -471,65 +522,6 @@
       updateOverlayPosition();
       updateOverlaySize();
       updateOverlayRotation();
-    }
-
-    function setOverlayText(text, button) {
-      if (activeButton === button) {
-        document.getElementById('overlayText').style.display = 'none';
-        activeButton.classList.remove('active-button');
-        activeButton = null;
-      } else {
-        if (activeButton) activeButton.classList.remove('active-button');
-        activeButton = button;
-        activeButton.classList.add('active-button');
-        document.getElementById('overlayText').innerText = text;
-        document.getElementById('overlayText').style.display = 'block';
-        document.getElementById('overlayImage').style.display = 'none';
-        activeOverlay = 'stencil';
-        resetOverlaySettings();
-      }
-    }
-
-    function selectStencil(value) {
-      if (value) setOverlayText(value, null);
-    }
-
-    function toggleItalic() {
-      const italicButton = document.getElementById('italicizeButton');
-      const overlayText = document.getElementById('overlayText');
-      overlayText.style.fontStyle = (overlayText.style.fontStyle === 'italic') ? 'normal' : 'italic';
-      italicButton.classList.toggle('active-button');
-    }
-
-    function toggleBold() {
-      const boldButton = document.getElementById('boldButton');
-      const overlayText = document.getElementById('overlayText');
-      overlayText.style.fontWeight = (overlayText.style.fontWeight === 'bold') ? 'normal' : 'bold';
-      boldButton.classList.toggle('active-button');
-    }
-
-    function applySticker(imageSrc, button) {
-      if (activeButton === button) {
-        document.getElementById('overlayImage').style.display = 'none';
-        activeButton.classList.remove('active-button');
-        activeButton = null;
-      } else {
-        if (activeButton) activeButton.classList.remove('active-button');
-        activeButton = button;
-        activeButton.classList.add('active-button');
-        const overlayImage = document.getElementById('overlayImage');
-        overlayImage.src = imageSrc;
-        overlayImage.style.display = 'block';
-        document.getElementById('overlayText').style.display = 'none';
-        activeOverlay = 'sticker';
-        overlayImage.style.width = "20%";
-        overlayImage.style.height = "auto";
-        resetOverlaySettings();
-      }
-    }
-
-    function selectSticker(value) {
-      if (value) applySticker(value, null);
     }
 
     function updateOverlayPosition() {
@@ -552,54 +544,6 @@
       activeElement.style.transform = `translate(-50%, -50%) scale(${document.getElementById('sizeSlider').value}) rotate(${rotation}deg)`;
     }
 
-    function toggleFilter(filter, button) {
-      if (activeFilters[filter]) {
-        delete activeFilters[filter];
-        button.classList.remove("active-button");
-      } else {
-        activeFilters[filter] = true;
-        button.classList.add("active-button");
-      }
-      applyFilters();
-    }
-
-    function applyFilters() {
-      const imgElement = document.getElementById("uploadedImage");
-      const overlayImage = document.getElementById("overlayImage");
-
-      let filterString = "";
-      if (activeFilters["mosaic"]) filterString += " blur(5px)";
-      if (activeFilters["blackWhite"]) filterString += " grayscale(100%)";
-      if (activeFilters["invert"]) filterString += " invert(100%)";
-      if (activeFilters["contrast"]) filterString += " contrast(200%)";
-
-      imgElement.style.filter = filterString.trim();
-      overlayImage.style.filter = filterString.trim();
-    }
-
-    function applyMobileFilters() {
-      const selectedOptions = Array.from(document.getElementById("filterDropdown").selectedOptions);
-      const selectedFilters = selectedOptions.map(option => option.value);
-
-      if (selectedFilters.includes("none")) {
-        activeFilters = {};
-      } else {
-        activeFilters = selectedFilters.reduce((acc, filter) => ({ ...acc, [filter]: true }), {});
-      }
-
-      applyFilters();
-    }
-
-    function downloadImage() {
-      const editor = document.getElementById('editor');
-      html2canvas(editor, { backgroundColor: null }).then(canvas => {
-        const link = document.createElement('a');
-        link.href = canvas.toDataURL('image/png');
-        link.download = 'edited-image.png';
-        link.click();
-      });
-    }
-
     function resetEditor() {
       document.getElementById('uploadedImage').style.display = 'none';
       document.getElementById('mainTitle').classList.replace("workspace-title", "main-title");
@@ -614,18 +558,11 @@
       document.getElementById("overlayText").style.fontWeight = "normal";
       document.getElementById("overlayImage").style.display = "none";
       document.getElementById("upload").value = '';
-      activeFilters = {};
-      applyFilters();
       if (activeButton) activeButton.classList.remove('active-button');
       activeButton = null;
+      appliedFilters = {};
+      applyCombinedFilters();
     }
-
-    window.addEventListener('resize', () => {
-      const editorContainer = document.getElementById('editorContainer');
-      const isMobile = window.innerWidth < 768;
-      editorContainer.style.width = isMobile ? '90vw' : '80vw';
-      editorContainer.style.height = isMobile ? '80vh' : 'auto';
-    });
   </script>
 </body>
 </html>
