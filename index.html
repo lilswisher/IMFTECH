@@ -286,6 +286,29 @@
         width: 100%;
         font-size: 0.9em;
       }
+
+      /* Hide desktop buttons and show dropdowns */
+      #stencilButton, #stickerButton {
+        display: none;
+      }
+
+      #stencilDropdown, #stickerDropdown {
+        display: block;
+        width: 100%;
+        max-width: 220px;
+        padding: 10px;
+        font-size: 1em;
+        border: 2px solid white;
+        background-color: black;
+        color: white;
+      }
+    }
+
+    /* Show buttons and hide dropdowns on desktop */
+    @media (min-width: 769px) {
+      #stencilDropdown, #stickerDropdown {
+        display: none;
+      }
     }
   </style>
 </head>
@@ -346,11 +369,10 @@
         <img id="overlayImage" alt="Sticker overlay">
       </div>
 
+      <!-- Desktop Buttons for Stencils and Stickers -->
       <div class="button-group" id="stencilGroup">
         <button id="stencilButton" onclick="toggleDropdown('stencilOptions', 'stencilButton')">Stencils</button>
         <div class="stencil-options" id="stencilOptions">
-          <button id="italicizeButton" onclick="toggleItalic()">Italicize</button>
-          <button id="boldButton" onclick="toggleBold()">Bold</button>
           <button onclick="setOverlayText('IMF', this)">IMF</button>
           <button onclick="setOverlayText('IMFORMANT', this)">IMFORMANT</button>
           <button onclick="setOverlayText('MEME ON A MISSION', this)">MEME ON A MISSION</button>
@@ -368,6 +390,26 @@
           <button onclick="applySticker('globewhitered.png', this)">Globe #3</button>
         </div>
       </div>
+
+      <!-- Mobile Dropdowns for Stencils and Stickers -->
+      <select id="stencilDropdown" onchange="selectStencil(this.value)">
+        <option value="" disabled selected>Select Stencil</option>
+        <option value="IMF">IMF</option>
+        <option value="IMFORMANT">IMFORMANT</option>
+        <option value="MEME ON A MISSION">MEME ON A MISSION</option>
+        <option value="$MONEY">$MONEY</option>
+        <option value="$IMF">$IMF</option>
+        <option value="Gmoney">Gmoney</option>
+      </select>
+
+      <select id="stickerDropdown" onchange="selectSticker(this.value)">
+        <option value="" disabled selected>Select Sticker</option>
+        <option value="hattech.png">Hat Tech</option>
+        <option value="moneyblack.png">Money Logo</option>
+        <option value="globewhiteblack.png">Globe #1</option>
+        <option value="globeredblack.png">Globe #2</option>
+        <option value="globewhitered.png">Globe #3</option>
+      </select>
     </div>
 
     <button id="downloadBtn">Download</button>
@@ -443,6 +485,10 @@
       }
     }
 
+    function selectStencil(value) {
+      if (value) setOverlayText(value, null);
+    }
+
     function toggleItalic() {
       const italicButton = document.getElementById('italicizeButton');
       const overlayText = document.getElementById('overlayText');
@@ -475,6 +521,10 @@
         overlayImage.style.height = "auto";
         resetOverlaySettings();
       }
+    }
+
+    function selectSticker(value) {
+      if (value) applySticker(value, null);
     }
 
     function updateOverlayPosition() {
